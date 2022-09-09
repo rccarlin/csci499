@@ -37,7 +37,7 @@ def setup_dataloader(args):
     # create dataloaders for each... what on earth does that mean?
 
     # extracting data from the json file
-    file = open('../../hw1/lang_to_sem_data.json')
+    file = open('lang_to_sem_data.json')
     langToSem = json.load(file)
     trainUntoken = langToSem["train"]
     valUntoken = langToSem["valid_seen"]
@@ -57,18 +57,20 @@ def setup_dataloader(args):
             newList = [temp, smallSet[1]]
             val2d.append(newList)
 
-    # okay now the commands are clean
-    vocab2Indx, indx2Vocab, maxLen = build_tokenizer_table(train2d)
-    # books_to_index, index_to_books = build_output_table(trainUntoken)
+    # making token table
+    (vocab2Indx, indx2Vocab, maxLen) = build_tokenizer_table(trainUntoken)
 
     # Encoding train
     n_lines = len(train2d)
     trainEncoded = np.zeros((n_lines, maxLen), dtype=np.int32)
     idx = 0
     for example in train2d:  # goes over each list of command, meaning
-        trainEncoded[idx][0] = vocab2Indx["start"]
-        jdx = 0
-        for word in example[0]:  # the first element is the command
+        trainEncoded[idx][0] = vocab2Indx["<start>"]
+        jdx = 1
+        wordList = example[0].split()
+        for word in wordList:  # the first element is the command
+            word = word.lower()
+            # if you want to do character by character like I did at first, have for word in example[0]
             if len(word) > 0:  # it is something to look at
                 if word in vocab2Indx:  # important enough to have a code for it
                     trainEncoded[idx][jdx] = vocab2Indx[word]
@@ -81,15 +83,17 @@ def setup_dataloader(args):
         idx += 1
 
     trainDS = torch.utils.data.TensorDataset(torch.from_numpy(trainEncoded))
-
     # Encoding val
     n_lines = len(val2d)
     valEncoded = np.zeros((n_lines, maxLen), dtype=np.int32)
     idx = 0
-    for example in train2d:  # goes over each list of command, meaning
-        valEncoded[idx][0] = vocab2Indx["start"]
-        jdx = 0
-        for word in example[0]:  # the first element is the command
+
+    for example in val2d:  # goes over each list of command, meaning
+        valEncoded[idx][0] = vocab2Indx["<start>"]
+        jdx = 1
+        wordList = example[0].split()
+        for word in wordList:  # the first element is the command
+            word = word.lower()
             if len(word) > 0:  # it is something to look at
                 if word in vocab2Indx:  # important enough to have a code for it
                     valEncoded[idx][jdx] = vocab2Indx[word]

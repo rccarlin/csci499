@@ -17,6 +17,7 @@ from utils import (
     build_tokenizer_table,
     build_output_tables,
 )
+import numpy as np
 
 
 def normalize(dicti, denom):
@@ -30,10 +31,10 @@ def normalize(dicti, denom):
 def printOutliers(dict1, dict2):
     for k1 in dict1:
         if k1 in dict2:
-            if abs(dict1[k1] - dict2[k1]) > .01:
+            if abs(dict1[k1] - dict2[k1]) > .015:
                 print(k1, "train:", dict1[k1], "val:", dict2[k1])
-        #else:
-            # print(k1, "is not in val")
+        else:
+            print(k1, "is not in val")
 
 
 def main():
@@ -110,14 +111,6 @@ def main():
     # print("\n")
     # print(pervalActDict)
 
-    # Most popular validation actions: GotoLocation, PickupObject, PutObject
-    # I am not surprised by those at all, those are pretty basic commands-- you can do them to many types objects
-    # (potentially more so than the other actions like heat or toggle) and these actions are common in strings of
-    # more complicated series of commands (if you are doing something with an object, you probably have to pick it up).
-    # All this to say I think these make sense for the most common --> worthwhile to practice more on more common things
-
-    # Least popular val actions: Toggle, clean, heat --> again, makes sense there's fewer of those because I can think
-    # of a lot of stuff that can't be toggled / shouldn't be heated up
 
     # Most popular validation objects: countertop, diningtable, fridge, sinkbasin: Most common objects are places...
     # guess that makes sense because actions often have specific locations you do them in? Also it was less obvious
@@ -127,11 +120,6 @@ def main():
 
     # As expected, least common val object are non kitchen things like statue and watercan
 
-    # Most popular train actions: goto, pickup, put. Same as before. Logically makese sense as stated earlier. Glad
-    # it's lined up with val so far.
-
-    # Least popular train actions: toggle, clean, cool. Almost the same as val... not too worried because their
-    # percentages are almost identical.
 
     # Most popular train locations: countertop, diningtable, sink, fridge. Out of order but still at the top--
     # nothing to be worried about yet... No one thing is dominating the % which is good
@@ -143,16 +131,17 @@ def main():
     # to use this system in a kitchen, shouldn't that inform what examples to give it?
 
     # this is how I'm quickly filtering to find things to talk about
-    # for k in trainTargetDict:
-    #     if trainTargetDict[k] <700:
-    #         print(k, trainTargetDict[k], pertrainTargetDict[k])
+    for k in valTargetDict:
+        if valTargetDict[k] > 1000:
+            print(k, valTargetDict[k], pervalTargetDict[k])
 
 
     # now to see if the % are way off
     print("Actions:")
     printOutliers(pertrainActDict, pervalActDict)
-    print("\n\nTargets")
+    print("\nTargets:")
     printOutliers(pertrainTargetDict, pervalTargetDict)
+    print("\n\n\n\n")
 
     # nothing was more than 10% off, except for things that weren't tested in validation... like the salt and pepper
     # shakers *thinking emoji*
@@ -162,7 +151,56 @@ def main():
 
     # and the action distributions are always close
 
-    # make a heat map with size numactions * numtargets
+    # make a (modified) heat map with size numtargets * numactions
+    # the idea of this being if a person finds a pattern, we hope the model does too
+    trainHeat = np.zeros((80, 8))
+    valHeat = np.zeros((80, 8))  # some will have zeros b/c I don't thin it's worth my time to make a whole other
+    # lookup table ok?
+
+    # step one: assign target/ actions to rows/ columns
+    tarRow = {}
+    actCol = {}
+
+    tID = 0
+    aID = 0
+    for t in trainTargetDict:
+        tarRow[t] = tID
+        tID += 1
+    for a in trainActDict:
+        actCol[a] = aID
+        aID += 1
+
+    # now I have a lookup table, time to populate!
+    # Training
+    for bigSet in trainUntoken:
+        for smallSet in bigSet:
+            c = actCol[smallSet[1][0]]  # action
+            r = tarRow[smallSet[1][1]]  # target
+
+            trainHeat[r][c] += 1
+    # Validation
+    for bigSet in valUntoken:
+        for smallSet in bigSet:
+            c = actCol[smallSet[1][0]]  # action
+            r = tarRow[smallSet[1][1]]  # target
+
+            valHeat[r][c] += 1
+
+    # normalizing for easier comparison
+    np.set_printoptions(linewidth=np.inf)
+    valHeat = valHeat / numVal
+    trainHeat = trainHeat / numTrain
+
+    # now to print out the table so I can interpret
+    print("Validation ~Heat Map~")
+    # print(actCol)
+    # print(valHeat)
+
+    # First impression: soe actions only have for a certain group of items
+
+
+
+
 
 
 main()
