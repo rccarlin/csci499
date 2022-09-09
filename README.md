@@ -1,6 +1,14 @@
-# Main Project Report
+This readme is so long because I am very passionate about the analysis question and I wanted to make up for the 
+fact that I have very little faith in my model's ability to compile.
 
-- [ ] (5pt) *Report* your results through an .md file in your submission; discuss your implementation choices and document the performance of your model (both training and validation performance) under the conditions you settled on (e.g., what hyperparameters you chose) and discuss why these are a good set.
+# Main Project Report
+Unfortunately my model does not work so I can't do too deep of an analysis on its performance (I eventually decided to 
+cut my losses and do analysis on things that didn't require my model to work. Even though it doesn't run, I still 
+made some decisions:
+
+- Set learning rate to .15 because that's where my AI fromCSCI 360 performed the best. Obviously other params make the 
+  lr preform better or worse, but I figured this was a good starting point. 
+
 
 # Input Analysis for Bonus Points
 I want to start by saying thank you for making this a bonus question because I looove doing data analysis. Plus, we
@@ -11,7 +19,7 @@ I focused my efforts on 2.5 main questions:
 1. Does the training set have some examples disproportionately represented (i.e., do we have another Count of Monte 
    Cristo on our hands)?
 2. Are certain action-target pairs more common than others?
-3. For Q1 and Q2, if the answer is yas, do they make sense for the problem at hand or are they challenges for the 
+3. For Q1 and Q2, if the answer is yes, do they make sense for the problem at hand or are they challenges for the 
    computer to overcome?
 
 
@@ -59,6 +67,44 @@ areas of greatest difference are the ones in a lot of training examples.
 
 
 ### Question 2
+At first, I wanted to make a heat map and then I realized I only knew how to do that in R and I didn't think all that 
+setup would be super worth my time... so I made something uglier that will serve the same purpose. I counted each 
+instance of each action-target pair and stored these counts in a 2D array. The columns corresponded to actions
+while the rows corresponded to targets (this orientation was easier to print out). Then I normalized the values so
+each index held the % of occurrences for easier interpretation.
+
+Unfortunately, the arrays are quite large and ugly so I will not paste them in this readme, but the code to make them is
+at the bottom of inputAnalysis.py. 
+
+#### A few findings from the Training "Heat Map"
+1. Obvious observation, but these distributions are NOT uniform; there are plenty of pairs that never show up (and some 
+   pairs show up way more than others). One could argue that this is merely a product of not enough data. These gaps 
+   make sense, however, when we consider the context of the problem. Some possible action-target pairs just make no 
+   sense or are even impossible. Maybe I don't have enough faith in the model, but I would hate for it to learn 
+   something weird because of some improbable examples in the training set.
+2. Column 7 corresponds to ToggleObject and is unsurprisingly fairly empty (see above for why). All of col7's weight 
+   is in [floorlamp][ToggleObject] (.68%) and [desklamp][ToggleObject] (.88%). This suggests that ToggleObject 
+   might imply the target is a lamp (I would do probability analysis if this readme wasn't already too long). But is the
+   reverse true? If I am working with a lamp, am I more likely to toggle it than other actions? Logically the answer is
+   yes: I am more likely to turn off a lamp than I am to heat up a lamp. But does the data reflect this? Again, yes: 
+   for both types of lamps, the only other weight is under the GoToLocation column (actually roughly 50% GoTo 50%
+   Toggle). In this instance, knowledge of the target can inform knowledge of the action and vice versa.
+3. On the opposite end of the spectrum, there are many positive values in the GotoLocation column. Since there are so 
+   many targets with this action, knowing the action isn't too helpful when trying to figure out the target (unlike the
+   last example). The reverse isn't very helpful either; there are very few targets that are only GotoLocation. In fact,
+   I could only fine one instance of this (handtowelholder)... but I think this *is* a case of not enough data since I
+   can imagine other actions with this object. A similar phenomenon happens in the PickupObject and PutObject columns,
+   just to a less severe degree. I could have predicited this given what I found from part 1, but it's nice to know 
+   they are popular because they are applied to a wide variety of objects as opposed to just a few popular objects
+   (which admittedly could make knowing these actions helpful for detrmining the target).
+4. Overall, I believe there are enough clusters* to justify having the model learn action-target pairs as opposed to 
+   learning the commands separately. *enough actions with few possible targets and enough targets with few possible 
+   actions
+   
+         
+
+
+
 
 
 

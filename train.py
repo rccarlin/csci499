@@ -149,7 +149,7 @@ def setup_optimizer(args, model):
     # ===================================================== #
     action_criterion = torch.nn.CrossEntropyLoss()  # is this the loss function I want to use? maybe change later
     target_criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=.1)  # FIXME what should the lr be?
+    optimizer = torch.optim.SGD(model.parameters(), lr=.15)  # FIXME what should the lr be?
 
     return action_criterion, target_criterion, optimizer
 

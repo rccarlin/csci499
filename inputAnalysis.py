@@ -27,6 +27,7 @@ def normalize(dicti, denom):
     return newDict
 
 
+# Returns instances where train and validation differ by a certain amount
 # assuming train is first
 def printOutliers(dict1, dict2):
     for k1 in dict1:
@@ -47,14 +48,13 @@ def main():
     train2d = list()
     val2d = list()
 
-    # Sees if certain actions and targets are more common than others
+    # Sees if certain actions or targets are more common than others
     trainActDict = {}
     trainTargetDict = {}
     valActDict = {}
     valTargetDict = {}
     numTrain = 0
     numVal = 0
-
 
     # Getting the counts of individual commands (actions or tokens) from both sets
     # Training
@@ -101,7 +101,6 @@ def main():
 
     # now I want to convert to %, bc clearly the training is going to have more instances than the validation...
     # In case I want the raw numbers later, I will make new Dictionaries
-
     pertrainActDict = normalize(trainActDict, numTrain)
     pertrainTargetDict = normalize(trainTargetDict, numTrain)
     pervalActDict = normalize(valActDict, numVal)
@@ -110,25 +109,6 @@ def main():
     # print(valActDict)
     # print("\n")
     # print(pervalActDict)
-
-
-    # Most popular validation objects: countertop, diningtable, fridge, sinkbasin: Most common objects are places...
-    # guess that makes sense because actions often have specific locations you do them in? Also it was less obvious
-    # when I was just looking at the list of objects, but is this system mostly being tested on kitchen things? Is
-    # this a cooking robot? If the system performs better on kitchen related activites than not, I wouldn't be horribly
-    # surprised. That being said, these 4 objects are super low % so I don't think it's *that* skewed
-
-    # As expected, least common val object are non kitchen things like statue and watercan
-
-
-    # Most popular train locations: countertop, diningtable, sink, fridge. Out of order but still at the top--
-    # nothing to be worried about yet... No one thing is dominating the % which is good
-
-    # FIXME... maybe should have been looking also to see if skewed
-
-    # least popular train objects: glassbottle, plunger, winebottle... little concerning that some of the least common
-    # examples *are* kitchen stuff... I mean I know we shouldn't peak at the validation, but like if the intention is
-    # to use this system in a kitchen, shouldn't that inform what examples to give it?
 
     # this is how I'm quickly filtering to find things to talk about
     for k in valTargetDict:
@@ -145,7 +125,6 @@ def main():
 
     # nothing was more than 10% off, except for things that weren't tested in validation... like the salt and pepper
     # shakers *thinking emoji*
-
     # Fridge, tomato, sidetable, apple, and bread are all off by >1% but <5%. I may be wrong, but that seems close
     # enough for me
 
@@ -160,7 +139,6 @@ def main():
     # step one: assign target/ actions to rows/ columns
     tarRow = {}
     actCol = {}
-
     tID = 0
     aID = 0
     for t in trainTargetDict:
@@ -171,6 +149,7 @@ def main():
         aID += 1
 
     # now I have a lookup table, time to populate!
+    # walks through examples and adjusts corresponding index
     # Training
     for bigSet in trainUntoken:
         for smallSet in bigSet:
@@ -192,15 +171,12 @@ def main():
     trainHeat = trainHeat / numTrain
 
     # now to print out the table so I can interpret
-    print("Validation ~Heat Map~")
+    print("Training ~Heat Map~")
     # print(actCol)
-    # print(valHeat)
-
-    # First impression: soe actions only have for a certain group of items
-
-
-
-
+    print(trainHeat)
+    print(actCol)
+    print(tarRow)
+    print(trainHeat[70])
 
 
 main()
