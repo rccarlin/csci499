@@ -57,12 +57,18 @@ def setup_dataloader(args):
             newList = [temp, smallSet[1]]
             val2d.append(newList)
 
-    # making token table
+    # making token table for inputs
     (vocab2Indx, indx2Vocab, maxLen) = build_tokenizer_table(trainUntoken)
+
+    # token table for outputs
+    (actions_to_index, index_to_actions, targets_to_index, index_to_targets) = build_output_tables(trainUntoken)
+    # his encoding function only ever used books to index....
 
     # Encoding train
     n_lines = len(train2d)
     trainEncoded = np.zeros((n_lines, maxLen), dtype=np.int32)
+    trainOut = np.zeros((n_lines, 2), dtype=np.int32)  # first col for actions, second for targets
+
     idx = 0
     for example in train2d:  # goes over each list of command, meaning
         trainEncoded[idx][0] = vocab2Indx["<start>"]
@@ -79,13 +85,17 @@ def setup_dataloader(args):
                 jdx += 1
                 if jdx == maxLen - 1:  # we have done enough encoding for now
                     break
+
         trainEncoded[idx][jdx] = vocab2Indx["<end>"]
+        trainOut[idx][0] = actions_to_index[example[1][0]]
+        trainOut[idx][1] = targets_to_index[example[1][1]]
         idx += 1
 
-    trainDS = torch.utils.data.TensorDataset(torch.from_numpy(trainEncoded))
+
     # Encoding val
     n_lines = len(val2d)
     valEncoded = np.zeros((n_lines, maxLen), dtype=np.int32)
+    valOut = np.zeros((n_lines, 2), dtype=np.int32)  # first col for actions, second for targets
     idx = 0
 
     for example in val2d:  # goes over each list of command, meaning
@@ -103,10 +113,12 @@ def setup_dataloader(args):
                 if jdx == maxLen - 1:  # we have done enough encoding for now
                     break
         valEncoded[idx][jdx] = vocab2Indx["<end>"]
+        valOut[idx][0] = actions_to_index[example[1][0]]
+        valOut[idx][1] = targets_to_index[example[1][1]]
         idx += 1
 
-    valDS = torch.utils.data.TensorDataset(torch.from_numpy(valEncoded))
-
+    trainDS = torch.utils.data.TensorDataset(torch.from_numpy(trainEncoded), torch.from_numpy(trainOut))
+    valDS = torch.utils.data.TensorDataset(torch.from_numpy(valEncoded), torch.from_numpy(valOut))
     train_loader = torch.utils.data.DataLoader(trainDS, shuffle=True)
     val_loader = torch.utils.data.DataLoader(valDS, shuffle=True)
     return train_loader, val_loader
