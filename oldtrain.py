@@ -13,8 +13,6 @@ from utils import (
     build_output_tables,
 )
 
-import matplotlib.pyplot as plt
-
 
 def setup_dataloader(args):
     """
@@ -37,7 +35,7 @@ def setup_dataloader(args):
     # create dataloaders for each... what on earth does that mean?
 
     # extracting data from the json file
-    file = open('../../hw1/lang_to_sem_data.json')
+    file = open('lang_to_sem_data.json')
     langToSem = json.load(file)
     trainUntoken = langToSem["train"]
     valUntoken = langToSem["valid_seen"]
@@ -133,7 +131,7 @@ def setup_optimizer(args, model):
     # ===================================================== #
     action_criterion = torch.nn.CrossEntropyLoss()  # is this the loss function I want to use? maybe change later
     target_criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=.1)  # FIXME what should the lr be?
+    optimizer = torch.optim.SGD(model.parameters(), lr=.1)  # FIXME do I need to set that?
 
     return action_criterion, target_criterion, optimizer
 
@@ -231,22 +229,6 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
     # weights via backpropagation
     model.train()
 
-    # I'm doing two lines per graph because it would be interesting to know if we were successfully learning
-    # one part (targets) but not the other (actions)
-
-    # Loss
-    trainALossTracker = list()
-    trainTLossTracker = list()
-    valALossTracker = list()
-    valTLossTracker = list()
-
-    # Accuracy
-    trainAAccTracker = list()
-    trainTAccTracker = list()
-    valAAccTracker = list()
-    valTAccTracker = list()
-
-
     for epoch in tqdm.tqdm(range(args.num_epochs)):
 
         # train single epoch
@@ -265,11 +247,6 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
             target_criterion,
             device,
         )
-
-        trainALossTracker.append(train_action_loss)
-        trainTLossTracker.append(train_target_loss)
-        trainAAccTracker.append(train_action_acc)
-        trainTAccTracker.append(train_target_acc)
 
         # some logging
         print(
@@ -299,10 +276,6 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
             print(
                 f"val action acc : {val_action_acc} | val target losaccs: {val_target_acc}"
             )
-            valALossTracker.append(val_action_loss)
-            valTLossTracker.append(val_target_loss)
-            valAAccTracker.append(val_action_acc)
-            valTAccTracker.append(val_target_acc)
 
     # ================== TODO: CODE HERE ================== #
     # Task: Implement some code to keep track of the model training and
@@ -310,41 +283,6 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
     # 4 figures for 1) training loss, 2) training accuracy,
     # 3) validation loss, 4) validation accuracy
     # ===================================================== #
-
-    # By the time I'm out of the for loop, I have all the losses and accuracies
-
-    trainingN = np.arange(len(trainTLossTracker))
-    # graph for Training Loss
-    plt.figure(1)
-    plt.plot(trainingN, trainTLossTracker, label="Target")
-    plt.plot(trainingN, trainALossTracker, label="Action")
-    plt.legend()
-    plt.title("Training Loss")
-
-    # training accuracy
-    plt.figure(2)
-    plt.plot(trainingN, trainTAccTracker, label="Target")
-    plt.plot(trainingN, trainAAccTracker, label="Action")
-    plt.legend()
-    plt.title("Training Accuracy")
-
-    valN = np.arange(len(valTLossTracker))
-    # graph for validation loss
-    plt.figure(3)
-    plt.plot(valN, valTLossTracker, label="Target")
-    plt.plot(valN, valALossTracker, label="Action")
-    plt.legend()
-    plt.title("Validation Loss")
-
-    # graph for validation accuracy
-    plt.figure(4)
-    plt.plot(valN, valTAccTracker, label="Target")
-    plt.plot(valN, valAAccTracker, label="Action")
-    plt.legend()
-    plt.title("Validation Accuracy")
-
-    plt.show()
-
 
 
 def main(args):
