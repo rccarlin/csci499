@@ -12,6 +12,7 @@ from utils import (
     build_tokenizer_table,
     build_output_tables,
 )
+import model as md
 
 import matplotlib.pyplot as plt
 
@@ -121,10 +122,10 @@ def setup_dataloader(args):
     valDS = torch.utils.data.TensorDataset(torch.from_numpy(valEncoded), torch.from_numpy(valOut))
     train_loader = torch.utils.data.DataLoader(trainDS, shuffle=True)
     val_loader = torch.utils.data.DataLoader(valDS, shuffle=True)
-    return train_loader, val_loader
+    return train_loader, val_loader, len(vocab2Indx), len(actions_to_index), len(targets_to_index)
 
 
-def setup_model(args):
+def setup_model(args, numWords, numActs, numTargets):
     """
     return:
         - model: YourOwnModelClass
@@ -132,7 +133,8 @@ def setup_model(args):
     # ================== TODO: CODE HERE ================== #
     # Task: Initialize your model.
     # ===================================================== #
-    model = None
+    model = md.commandIDer(128, args.hidden_dim, numWords, numActs, numTargets)  # FIXMe what is embedding dim
+    # model = BookIdet(device, len(vocab_to_index), len_cutoff, len(books_to_index), embedding_dim)
     return model
 
 
@@ -147,7 +149,7 @@ def setup_optimizer(args, model):
     # Task: Initialize the loss function for action predictions
     # and target predictions. Also initialize your optimizer.
     # ===================================================== #
-    action_criterion = torch.nn.CrossEntropyLoss()  # is this the loss function I want to use? maybe change later
+    action_criterion = torch.nn.NLLLoss()  # FIXME
     target_criterion = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=.15)  # FIXME what should the lr be?
 
@@ -175,18 +177,28 @@ def train_epoch(
 
     # iterate over each batch in the dataloader
     # NOTE: you may have additional outputs from the loader __getitem__, you can modify this
+    # FIXME is the loader nested like before? how does it know what a batch is and why are we not looping over the
+    # batch?
     for (inputs, labels) in loader:
         # put model inputs to device
         inputs, labels = inputs.to(device), labels.to(device)
 
         # calculate the loss and train accuracy and perform backprop
         # NOTE: feel free to change the parameters to the model forward pass here + outputs
-        actions_out, targets_out = model(inputs, labels)
+        # FIXME maybe do that?
+        actions_out, targets_out = model(inputs)
 
         # calculate the action and target prediction loss
         # NOTE: we assume that labels is a tensor of size Bx2 where labels[:, 0] is the
         # action label and labels[:, 1] is the target label
-        action_loss = action_criterion(actions_out.squeeze(), labels[:, 0].long())
+
+        print("\n\n\nin train ")
+        print(actions_out)
+        temp = actions_out.squeeze()
+
+        print(actions_out[len(actions_out) - 1])
+        # print(temp[len(temp[])- 1])
+        action_loss = action_criterion(actions_out[len(actions_out) - 1], labels[:, 0].long())
         target_loss = target_criterion(targets_out.squeeze(), labels[:, 1].long())
 
         loss = action_loss + target_loss
@@ -362,16 +374,15 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
     plt.show()
 
 
-
 def main(args):
     device = get_device(args.force_cpu)
 
     # get dataloaders
-    train_loader, val_loader, maps = setup_dataloader(args)
+    train_loader, val_loader, numWords, numActs, numTargets = setup_dataloader(args)
     loaders = {"train": train_loader, "val": val_loader}
 
     # build model
-    model = setup_model(args, maps, device)
+    model = setup_model(args, numWords, numActs, numTargets)  # FIXME took out device cos the function didn't ask for it
     print(model)
 
     # get optimizer and loss functions
@@ -413,6 +424,7 @@ if __name__ == "__main__":
     # Task (optional): Add any additional command line
     # parameters you may need here
     # ===================================================== #
+    parser.add_argument("--hidden_dim", type=int, default=2)  # FIXME default to 2 hidden layers
     args = parser.parse_args()
 
     main(args)

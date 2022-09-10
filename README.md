@@ -7,7 +7,11 @@ cut my losses and do analysis on things that didn't require my model to work. Ev
 made some decisions:
 
 - Set learning rate to .15 because that's where my AI fromCSCI 360 performed the best. Obviously other params make the 
-  lr preform better or worse, but I figured this was a good starting point. 
+  lr preform better or worse, but I figured this was a good starting point.
+- the loss functions?
+- using one model for both actions and targets as opposed to learning them separately...
+- num hidden layers
+- embedding dim?
 
 
 # Input Analysis for Bonus Points
