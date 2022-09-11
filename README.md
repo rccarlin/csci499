@@ -30,7 +30,8 @@ train action acc : 0.4696053990078316 | train target acc: 0.0850520007050943
 val action loss : 28185.211028575897 | val target loss: 76219.43038487434
 val action acc : 0.475403266205791 | val target acc: 0.09037170624185953
 Unsurprisingly, the accuracy for actions and targets is about the frequency of the most popular action and target
-(see below for more info).
+(see below for more info). I would say it's a good sign that the train and val accuracies are close, but it's really
+hard to draw a real conclusion from only one epoch.
 
 
 # Input Analysis for Bonus Points
