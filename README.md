@@ -2,16 +2,35 @@ This readme is so long because I am very passionate about the analysis question 
 fact that I have very little faith in my model's ability to compile.
 
 # Main Project Report
-Unfortunately my model does not work so I can't do too deep of an analysis on its performance (I eventually decided to 
-cut my losses and do analysis on things that didn't require my model to work. Even though it doesn't run, I still 
-made some decisions:
+Unfortunately my model does not work well because it took me 5 + hours to debug the model, only for me to realize I forgot
+to break the data back into batches... so "batches" are now individual examples. Since I still don't have a great grasp
+on LSTMs, I wasn't able to get my code working with *useful* batches. However, my code does run and I'll take what I can
+get. In addition to taking way too long to run, this is a bad system because it computes gradients and runs an optimizer
+step after example, which is both extra work and potentially work in the wrong direction. Getting one example wrong
+in this program is a lot more costly than normal (which may cause thrashing).
 
-- Set learning rate to .15 because that's where my AI fromCSCI 360 performed the best. Obviously other params make the 
-  lr preform better or worse, but I figured this was a good starting point.
-- the loss functions?
-- using one model for both actions and targets as opposed to learning them separately...
-- num hidden layers
-- embedding dim?
+Even without an efficient program, I was still able to make some decisions:
+
+- I set learning rate to .15 to begin with because that had worked well for me in the past. After realizing that my batches
+  are too small, I set the rate to .05 so individual examples aren't too powerful.
+- I decided to use 2 hidden layers because CSCI 360 told us that most problems can be solved with enough hidden layers,
+  but I figured simple text classification probably wasn't difficult enough for many more layers to be worth it
+- Not a hyperparamerter, but: I used one model for learning both actions and target (as opposed to learning them 
+  separately) because actions and targets are not independent.
+- I chose 128 for embedding layer dimension since we had used that in class, and it's a power of 2 that's slightly
+  bigger than the number of different targets.
+- Other choices (loss function, embedding layer) were made on a whim and my program takes too long for me to be able
+  to run more tests to see what I like best.
+
+with lr= .15, 2 hidden layers, embedding dim = 128, action loss function = NLLLoss, target loss function = CrossEntropyLoss,
+and 1 epoch so my program would complete by the time I was done eating:
+train action loss : 663742.1542512253 | train target loss: 1843821.2794568539
+train action acc : 0.4696053990078316 | train target acc: 0.0850520007050943
+
+val action loss : 28185.211028575897 | val target loss: 76219.43038487434
+val action acc : 0.475403266205791 | val target acc: 0.09037170624185953
+Unsurprisingly, the accuracy for actions and targets is about the frequency of the most popular action and target
+(see below for more info).
 
 
 # Input Analysis for Bonus Points

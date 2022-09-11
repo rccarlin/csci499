@@ -22,8 +22,9 @@ class commandIDer(nn.Module):
 
     def forward(self, command):
         embeds = self.embeddings(command)  # command should already be a list of embedded words
-
         lstmOut, _ = self.lstm(embeds.view(len(command[0]), 1, -1))
+
+        # calculating scores for different possible labels
         actSpace = self.toAct(lstmOut.view(len(command[0]), -1))
         targetSpace = self.toTarget(lstmOut.view(len(command[0]), -1))
         actScores = F.log_softmax(actSpace, dim=1)

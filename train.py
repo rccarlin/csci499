@@ -5,7 +5,6 @@ import json
 import numpy as np
 from sklearn.metrics import accuracy_score
 from torch.utils.data import TensorDataset, DataLoader
-# FIXME should I keep that?
 from utils import (
     get_device,
     preprocess_string,
@@ -32,12 +31,8 @@ def setup_dataloader(args):
 
     # Hint: use the helper functions provided in utils.py
     # ===================================================== #
-    # get training data from the .jason file
-    # tokenize it: preprocess strings, do I do anything else?
-    # split into train and validation set, the json has them labled already
-    # create dataloaders for each... what on earth does that mean?
 
-    # extracting data from the json file
+    # opens file and breaks up the data
     file = open('lang_to_sem_data.json')
     langToSem = json.load(file)
     trainUntoken = langToSem["train"]
@@ -63,23 +58,23 @@ def setup_dataloader(args):
 
     # token table for outputs
     (actions_to_index, index_to_actions, targets_to_index, index_to_targets) = build_output_tables(trainUntoken)
-    # his encoding function only ever used books to index....
 
-    # Encoding train
+    # Encoding train examples
     n_lines = len(train2d)
     trainEncoded = np.zeros((n_lines, maxLen), dtype=np.int32)
     trainOut = np.zeros((n_lines, 2), dtype=np.int32)  # first col for actions, second for targets
 
     idx = 0
-    for example in train2d:  # goes over each list of command, meaning
+    # for each list of sentence, labels in training
+    for example in train2d:
         trainEncoded[idx][0] = vocab2Indx["<start>"]
         jdx = 1
-        wordList = example[0].split()
-        for word in wordList:  # the first element is the command
+        wordList = example[0].split()  # now I'm looking at individual words
+        for word in wordList:
             word = word.lower()
             # if you want to do character by character like I did at first, have for word in example[0]
-            if len(word) > 0:  # it is something to look at
-                if word in vocab2Indx:  # important enough to have a code for it
+            if len(word) > 0:  # word is long enough to bother with
+                if word in vocab2Indx:  # popular enough to have a code for it
                     trainEncoded[idx][jdx] = vocab2Indx[word]
                 else:  # not important enough
                     trainEncoded[idx][jdx] = vocab2Indx["<unk>"]
@@ -92,18 +87,17 @@ def setup_dataloader(args):
         trainOut[idx][1] = targets_to_index[example[1][1]]
         idx += 1
 
-
-    # Encoding val
+    # Encoding val ... same as for training
     n_lines = len(val2d)
     valEncoded = np.zeros((n_lines, maxLen), dtype=np.int32)
     valOut = np.zeros((n_lines, 2), dtype=np.int32)  # first col for actions, second for targets
     idx = 0
 
-    for example in val2d:  # goes over each list of command, meaning
+    for example in val2d:  # goes over each list of sentence, label
         valEncoded[idx][0] = vocab2Indx["<start>"]
         jdx = 1
-        wordList = example[0].split()
-        for word in wordList:  # the first element is the command
+        wordList = example[0].split() # the first element is the sentence, now need to split
+        for word in wordList:
             word = word.lower()
             if len(word) > 0:  # it is something to look at
                 if word in vocab2Indx:  # important enough to have a code for it
@@ -120,8 +114,12 @@ def setup_dataloader(args):
 
     trainDS = torch.utils.data.TensorDataset(torch.from_numpy(trainEncoded), torch.from_numpy(trainOut))
     valDS = torch.utils.data.TensorDataset(torch.from_numpy(valEncoded), torch.from_numpy(valOut))
-    train_loader = torch.utils.data.DataLoader(trainDS, shuffle=True)
+    # train_loader = torch.utils.data.DataLoader(trainDS, shuffle=True, batch_size=args.batch_size)
+    # val_loader = torch.utils.data.DataLoader(valDS, shuffle=True, batch_size=args.batch_size)
+    train_loader = torch.utils.data.DataLoader(trainDS, shuffle=True)  # things break when I add back the batch size
     val_loader = torch.utils.data.DataLoader(valDS, shuffle=True)
+
+    # I'm returning more than the dat loaders because I found them useful when making the model
     return train_loader, val_loader, len(vocab2Indx), len(actions_to_index), len(targets_to_index)
 
 
@@ -133,8 +131,7 @@ def setup_model(args, numWords, numActs, numTargets):
     # ================== TODO: CODE HERE ================== #
     # Task: Initialize your model.
     # ===================================================== #
-    model = md.commandIDer(128, args.hidden_dim, numWords, numActs, numTargets)  # FIXMe what is embedding dim
-    # model = BookIdet(device, len(vocab_to_index), len_cutoff, len(books_to_index), embedding_dim)
+    model = md.commandIDer(128, args.hidden_dim, numWords, numActs, numTargets)
     return model
 
 
@@ -149,9 +146,9 @@ def setup_optimizer(args, model):
     # Task: Initialize the loss function for action predictions
     # and target predictions. Also initialize your optimizer.
     # ===================================================== #
-    action_criterion = torch.nn.NLLLoss()  # FIXME
+    action_criterion = torch.nn.NLLLoss()  # FIXME possibly change later
     target_criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=.15)  # FIXME what should the lr be?
+    optimizer = torch.optim.SGD(model.parameters(), lr=.05)  # FIXME what should the lr be?
 
     return action_criterion, target_criterion, optimizer
 
@@ -166,7 +163,6 @@ def train_epoch(
     device,
     training=True,
 ):
-    print("raining!")
     epoch_action_loss = 0.0
     epoch_target_loss = 0.0
 
@@ -178,18 +174,14 @@ def train_epoch(
 
     # iterate over each batch in the dataloader
     # NOTE: you may have additional outputs from the loader __getitem__, you can modify this
-    # FIXME is the loader nested like before? how does it know what a batch is and why are we not looping over the
-    # batch?
+    # FIXME batches aren't in the dataloader....
     for (inputs, labels) in loader:
-        print(labels)
         # put model inputs to device
         inputs, labels = inputs.to(device), labels.to(device)
 
         # calculate the loss and train accuracy and perform backprop
         # NOTE: feel free to change the parameters to the model forward pass here + outputs
-        # FIXME maybe do that?
         actions_out, targets_out = model(inputs)
-
 
         # calculate the action and target prediction loss
         # NOTE: we assume that labels is a tensor of size Bx2 where labels[:, 0] is the
@@ -211,13 +203,13 @@ def train_epoch(
 
         # take the prediction with the highest probability
         # NOTE: this could change depending on if you apply Sigmoid in your forward pass
-        #FIXME I wish I knew what all these things are... why am I doing this?
         action_preds_ = actions_out.argmax()
         target_preds_ = targets_out.argmax()
 
         # aggregate the batch predictions + labels
         action_preds.append(action_preds_.cpu().numpy())
-        # action_preds.extend(action_preds_.cpu().numpy()) This never ran for me
+        # action_preds.extend(action_preds_.cpu().numpy()) This never ran for me b/c I misunderstood what the model
+        # should spit out...
         # target_preds.extend(target_preds_.cpu().numpy()) also didn't work
         target_preds.append(target_preds_.cpu().numpy())
         action_labels.append(labels[:, 0].cpu().numpy())
@@ -273,10 +265,7 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
     valAAccTracker = list()
     valTAccTracker = list()
 
-    # FIXME
-    x = 1
     for epoch in tqdm.tqdm(range(args.num_epochs)):
-        print(x, "epoch")
 
         # train single epoch
         # returns loss for action and target prediction and accuracy
@@ -294,7 +283,7 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
             target_criterion,
             device,
         )
-
+        # Adding data to log to graph later
         trainALossTracker.append(train_action_loss)
         trainTLossTracker.append(train_target_loss)
         trainAAccTracker.append(train_action_acc)
@@ -312,7 +301,6 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
         # during eval, we run a forward pass through the model and compute
         # loss and accuracy but we don't update the model weights
         if epoch % args.val_every == 0:
-            print("validating!")
             val_action_loss, val_target_loss, val_action_acc, val_target_acc = validate(
                 args,
                 model,
@@ -327,13 +315,13 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
                 f"val action loss : {val_action_loss} | val target loss: {val_target_loss}"
             )
             print(
-                f"val action acc : {val_action_acc} | val target losaccs: {val_target_acc}"
+                f"val action acc : {val_action_acc} | val target acc: {val_target_acc}"
             )
+            # Adding data to log to graph later
             valALossTracker.append(val_action_loss)
             valTLossTracker.append(val_target_loss)
             valAAccTracker.append(val_action_acc)
             valTAccTracker.append(val_target_acc)
-        x += 1
 
     # ================== TODO: CODE HERE ================== #
     # Task: Implement some code to keep track of the model training and
@@ -344,7 +332,7 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
 
     # By the time I'm out of the for loop, I have all the losses and accuracies
 
-    trainingN = np.arange(len(trainTLossTracker))
+    trainingN = np.arange(len(trainTLossTracker))  # how many training data points do I have?
     # graph for Training Loss
     plt.figure(1)
     plt.plot(trainingN, trainTLossTracker, label="Target")
@@ -352,14 +340,14 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
     plt.legend()
     plt.title("Training Loss")
 
-    # training accuracy
+    # graph for training accuracy
     plt.figure(2)
     plt.plot(trainingN, trainTAccTracker, label="Target")
     plt.plot(trainingN, trainAAccTracker, label="Action")
     plt.legend()
     plt.title("Training Accuracy")
 
-    valN = np.arange(len(valTLossTracker))
+    valN = np.arange(len(valTLossTracker))  # how many validation data points do I have?
     # graph for validation loss
     plt.figure(3)
     plt.plot(valN, valTLossTracker, label="Target")
@@ -385,7 +373,7 @@ def main(args):
     loaders = {"train": train_loader, "val": val_loader}
 
     # build model
-    model = setup_model(args, numWords, numActs, numTargets)  # FIXME took out device cos the function didn't ask for it
+    model = setup_model(args, numWords, numActs, numTargets)
     print(model)
 
     # get optimizer and loss functions
@@ -418,7 +406,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--force_cpu", action="store_true", help="debug mode")
     parser.add_argument("--eval", action="store_true", help="run eval")
-    parser.add_argument("--num_epochs", default=10, help="number of training epochs")
+    parser.add_argument("--num_epochs", default=2, help="number of training epochs")
     parser.add_argument(
         "--val_every", default=5, help="number of epochs between every eval loop"
     )
@@ -427,7 +415,7 @@ if __name__ == "__main__":
     # Task (optional): Add any additional command line
     # parameters you may need here
     # ===================================================== #
-    parser.add_argument("--hidden_dim", type=int, default=2)  # FIXME default to 2 hidden layers
+    parser.add_argument("--hidden_dim", type=int, default=1)  # FIXME default to 2 hidden layers
     args = parser.parse_args()
 
     main(args)
