@@ -22,11 +22,6 @@ class commandIDer(nn.Module):
 
     def forward(self, command):
         embeds = self.embeddings(command)  # command should already be a list of embedded words
-        # print(embeds.shape)  # 1, 24, 128
-        # print(len(command))  # maybe not expecting doble [[]]? so do of 0?
-        # print(len(command[0]))
-        # print(command)
-        # print((embeds.view(len(command[0]), 1, -1)).shape)
 
         lstmOut, _ = self.lstm(embeds.view(len(command[0]), 1, -1))
         actSpace = self.toAct(lstmOut.view(len(command[0]), -1))
@@ -34,7 +29,5 @@ class commandIDer(nn.Module):
         actScores = F.log_softmax(actSpace, dim=1)
         targetScores = F.log_softmax(targetSpace, dim=1)
 
-        print(actScores)
-
-        return actScores, targetScores
+        return actScores[len(actScores) - 1], targetScores[len(targetScores) - 1]
 
